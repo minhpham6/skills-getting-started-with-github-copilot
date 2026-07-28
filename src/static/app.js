@@ -19,20 +19,32 @@ document.addEventListener("DOMContentLoaded", () => {
         activityCard.className = "activity-card";
 
         const spotsLeft = details.max_participants - details.participants.length;
+        const escapeHtml = (value) =>
+          String(value).replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[char]));
+        const safeActivity = escapeHtml(name);
         const participantsHtml = (details.participants || []).length > 0
           ? `
             <div class="participants-section">
               <h5>Participants</h5>
               <div class="participants-list">
-                ${details.participants
-                  .map((participant) => `
+                ${(details.participants || [])
+                  .map((participant) => {
+                    const safeParticipant = escapeHtml(participant);
+                    return `
                     <div class="participant-item">
-                      <span>${participant}</span>
-                      <button class="delete-participant" data-activity="${name}" data-email="${participant}" type="button" aria-label="Remove ${participant}">
+                      <span>${safeParticipant}</span>
+                      <button class="delete-participant" data-activity="${safeActivity}" data-email="${safeParticipant}" type="button" aria-label="Remove ${safeParticipant}">
                         ✕
                       </button>
                     </div>
-                  `)
+                  `;
+                  })
                   .join("")}
               </div>
             </div>
@@ -68,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function showMessage(text, type) {
     messageDiv.textContent = text;
-    messageDiv.className = type;
+    messageDiv.className = `message ${type}`;
     messageDiv.classList.remove("hidden");
 
     setTimeout(() => {
@@ -77,7 +89,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function refreshActivities() {
+    const selected = activitySelect.value;
+    activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
     await fetchActivities();
+    if (selected) {
+      activitySelect.value = selected;
+    }
   }
 
   // Handle form submission
